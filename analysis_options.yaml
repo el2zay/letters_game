@@ -13,6 +13,9 @@
 
 include: package:lints/recommended.yaml
 
+dart_code_metrics:
+    formatter:
+        line-length: 100
 # Uncomment the following section to specify additional rules.
 
 # linter:
