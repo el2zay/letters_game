@@ -3,18 +3,115 @@ import 'dart:math' show Random;
 
 import 'package:chalkdart/chalk.dart';
 import 'package:letters_game/resources/fr_dictionnary.dart';
+import 'package:letters_game/utils/alternate_screen.dart';
+import 'package:letters_game/utils/style_utils.dart';
 
-void main() async {
-  print(chalk.pink("Here are the available letters : "));
+// Détecter la width du terminal
+final int terminalWidth = stdout.terminalColumns;
+// Détecter la height du terminal
+final int terminalHeight = stdout.terminalLines;
+
+void main() {
+  enableAlternateScreen();
+  ProcessSignal.sigint.watch().listen((_) {
+    disableAlternateScreen();
+    exit(0);
+  });
+
+  selectLanguage();
+  // game();
+}
+
+List<String> getFrenchFlagLines({int height = 18, int stripeWidth = 18}) {
+  final String blueStripe = chalk.onDarkBlue(' ' * stripeWidth);
+  final String whiteStripe = chalk.bgWhite(' ' * stripeWidth);
+  final String redStripe = chalk.onDarkRed(' ' * stripeWidth);
+
+  final List<String> lines = [];
+  final flagLine = blueStripe + whiteStripe + redStripe;
+
+  for (var i = 0; i < height; i++) {
+    lines.add(flagLine);
+  }
+  return lines;
+}
+
+String drawEnglishFlag() {
+  final Chalk blue = chalk.onDarkBlue.darkBlue;
+  final Chalk red = chalk.onDarkRed.darkRed;
+  final Chalk white = chalk.bgWhite.white;
+  final Chalk hide = chalk.hidden;
+
+  String colorize(String line) {
+    return line.split('').map((char) {
+      switch (char) {
+        case '8' || ";" || "a":
+          return white(char);
+        case '~' || '.' || '"' || "`":
+          return red(char);
+        case ':':
+          return blue(char);
+        case '|':
+          return hide(char);
+        default:
+          return char;
+      }
+    }).join();
+  }
+
+  final lines = [
+    "|~888a`~888a:::::::::::::::88......88:::::::::::::::;a8~\".a888~|",
+    "|::::~8a.`~888a::::::::::::88......88::::::::::::;a8~\".a888~:::|",
+    "|:::::::~8a.`~888a:::::::::88......88:::::::::;a8~\".a888~::::::|",
+    "|::::::::::~8a.`~888a::::::88......88::::::;a8~\".a888~:::::::::|",
+    "|:::::::::::::~8a.`~888a:::88......88:::;a8~\".a888~::::::::::::|",
+    "|::::::::::::::::~8a.`~888a88......88;a8~\".a888~:::::::::::::::|",
+    "|:::::::::::::::::::~8a.`~888......88~\".a888~::::::::::::::::::|",
+    "|8888888888888888888888888888......8888888888888888888888888888|",
+    "|..............................................................|",
+    "|..............................................................|",
+    "|8888888888888888888888888888......8888888888888888888888888888|",
+    "|::::::::::::::::::a888~\".a88......888a.\"~8;:::::::::::::::::::|",
+    "|:::::::::::::::a888~\".a8~:88......88~888a.\"~8;::::::::::::::::|",
+    "|::::::::::::a888~\".a8~::::88......88:::~888a.\"~8;:::::::::::::|",
+    "|:::::::::a888~\".a8~:::::::88......88::::::~888a.\"~8;::::::::::|",
+    "|::::::a888~\".a8~::::::::::88......88:::::::::~888a.\"~8;:::::::|",
+    "|:::a888~\".a8~:::::::::::::88......88::::::::::::~888a.\"~8;::::|",
+    "|a888~\".a8~::::::::::::::::88......88:::::::::::::::~888a.\"~8;:|",
+  ];
+
+  return lines.map(colorize).join('\n');
+}
+
+void selectLanguage() {
+  final frenchLines = getFrenchFlagLines();
+  final englishLines = drawEnglishFlag().split('\n');
+
+  final spacing = '         ';
+
+  stdout.writeln(printCentered(chalk.bold.deepPink("Select your language !\n\n\n")));
+
+  final maxLines = [frenchLines.length, englishLines.length].reduce((a, b) => a > b ? a : b);
+
+  for (int i = 0; i < maxLines; i++) {
+    final frenchLine = i < frenchLines.length ? frenchLines[i] : '';
+    final englishLine = i < englishLines.length ? englishLines[i] : '';
+    final combinedLine = frenchLine + spacing + englishLine;
+    stdout.writeln(printCentered(combinedLine));
+  }
+}
+
+void game() async {
+  stdout.writeln(chalk.pink("Here are the available letters : "));
   final availableLetters = chooseLetters();
   final wordsPossible = await findPossibleWord(availableLetters);
-  print(chalk.lightPink(availableLetters.join(' ')));
+  stdout.writeln(chalk.lightPink(availableLetters.join(' ')));
   bool won = false;
   bool inProgress = false;
 
   while (!won) {
     if (!inProgress) {
-      print(chalk.pink("Enter a world : "));
+      stdout.writeln(chalk.pink("Enter a world : "));
       String? inputWord = stdin.readLineSync()?.toUpperCase();
 
       if (inputWord != null && inputWord.isNotEmpty) {
@@ -25,23 +122,29 @@ void main() async {
           final wordMap = lettersToDico(inputWord.split(''));
 
           if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord)) {
-            print(chalk.hotPink("Congrats ! The word $inputWord is one of the longest words."));
+            stdout.writeln(
+              chalk.hotPink("Congrats ! The word $inputWord is one of the longest words."),
+            );
             won = true;
           } else if (isIncluded(wordMap, lettersMap) &&
               !wordsPossible.contains(inputWord.toUpperCase())) {
-            print(chalk.hotPink("The word'$inputWord' is correct but not the longest possible."));
+            stdout.writeln(
+              chalk.hotPink("The word'$inputWord' is correct but not the longest possible."),
+            );
             inProgress = false;
           } else {
-            print(chalk.hotPink("The word '$inputWord is not formed with the available letters"));
+            stdout.writeln(
+              chalk.hotPink("The word '$inputWord is not formed with the available letters"),
+            );
             inProgress = false;
           }
         } else {
           inProgress = false;
-          print(chalk.deepPink("The word '$inputWord' does not exist in the dictionary"));
+          stdout.writeln(chalk.deepPink("The word '$inputWord' does not exist in the dictionary"));
         }
       } else {
         inProgress = false;
-        print(chalk.hotPink("No words entered. Please try again."));
+        stdout.writeln(chalk.hotPink("No words entered. Please try again."));
       }
     }
   }
