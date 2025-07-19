@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math' show Random;
 
 import 'package:chalkdart/chalk.dart';
+import 'package:dart_console/dart_console.dart';
 import 'package:letters_game/resources/fr_dictionnary.dart';
 import 'package:letters_game/utils/alternate_screen.dart';
 import 'package:letters_game/utils/style_utils.dart';
@@ -10,9 +11,11 @@ import 'package:letters_game/utils/style_utils.dart';
 final int terminalWidth = stdout.terminalColumns;
 // Détecter la height du terminal
 final int terminalHeight = stdout.terminalLines;
+final console = Console();
 
 void main() {
   enableAlternateScreen();
+  stdout.write('\x1b[?25l');
   ProcessSignal.sigint.watch().listen((_) {
     disableAlternateScreen();
     exit(0);
@@ -86,18 +89,57 @@ String drawEnglishFlag() {
 void selectLanguage() {
   final frenchLines = getFrenchFlagLines();
   final englishLines = drawEnglishFlag().split('\n');
-
+  int language = 0;
   final spacing = '         ';
 
-  stdout.writeln(printCentered(chalk.bold.deepPink("Select your language !\n\n\n")));
+  void renderScreen() {
+    console.clearScreen();
+    setCursorPosition((terminalHeight * 0.18).floor(), 0);
+    stdout.writeln(printCentered(chalk.deepPink("Sélectionnez votre langue !\n")));
+    stdout.writeln(printCentered(chalk.deepPink("Select your language !\n\n\n")));
 
-  final maxLines = [frenchLines.length, englishLines.length].reduce((a, b) => a > b ? a : b);
+    final maxLines = [frenchLines.length, englishLines.length].reduce((a, b) => a > b ? a : b);
 
-  for (int i = 0; i < maxLines; i++) {
-    final frenchLine = i < frenchLines.length ? frenchLines[i] : '';
-    final englishLine = i < englishLines.length ? englishLines[i] : '';
-    final combinedLine = frenchLine + spacing + englishLine;
-    stdout.writeln(printCentered(combinedLine));
+    for (int i = 0; i < maxLines; i++) {
+      final frenchLine = i < frenchLines.length ? frenchLines[i] : '';
+      final englishLine = i < englishLines.length ? englishLines[i] : '';
+      final combinedLine = frenchLine + spacing + englishLine;
+      stdout.writeln(printCentered(combinedLine));
+    }
+    // Après l'affichage des drapeaux
+    stdout.writeln();
+
+    // Calcul de la largeur réelle de chaque drapeau
+    int frenchRealWidth = 18 * 3; // stripeWidth * 3 (bleu + blanc + rouge)
+    int englishRealWidth = 62; // Largeur visible du drapeau anglais (sans codes ANSI)
+
+    // Labels avec sélection
+    final frenchLabel = language == 0 ? chalk.onPurple.bold('Français') : chalk.grey('Français');
+    final englishLabel = language == 1 ? chalk.onPurple.bold('English') : chalk.grey('English');
+
+
+    setCursorPosition(35, ((((spacing.length) * 5).floor() * terminalWidth) / 168).floor());
+    stdout.write(frenchLabel);
+    setCursorPosition(35, ((((spacing.length) * 12.7).floor() * terminalWidth) / 168).floor());
+    stdout.write(englishLabel);
+
+    setCursorPosition((terminalHeight * 0.95).floor(), 0);
+    stdout.writeln(chalk.greyX11("Available keys : ◁ ▷\n⏎ to select\nCtrl+C to exit"));
+  }
+
+  renderScreen();
+
+  while (true) {
+    var key = console.readKey();
+    if (key.controlChar == ControlCharacter.arrowRight ||
+        key.controlChar == ControlCharacter.arrowLeft) {
+      language = (language + 1) % 2;
+      renderScreen();
+    }
+    if (key.isControl && key.controlChar == ControlCharacter.ctrlC) {
+      disableAlternateScreen();
+      exit(0);
+    }
   }
 }
 
