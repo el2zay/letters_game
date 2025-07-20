@@ -22,7 +22,6 @@ void main() {
   });
 
   selectLanguage();
-  // game();
 }
 
 List<String> getFrenchFlagLines({int height = 18, int stripeWidth = 18}) {
@@ -86,7 +85,7 @@ String drawEnglishFlag() {
   return lines.map(colorize).join('\n');
 }
 
-void selectLanguage() {
+void selectLanguage() async {
   final frenchLines = getFrenchFlagLines();
   final englishLines = drawEnglishFlag().split('\n');
   int language = 0;
@@ -109,14 +108,9 @@ void selectLanguage() {
     // Après l'affichage des drapeaux
     stdout.writeln();
 
-    // Calcul de la largeur réelle de chaque drapeau
-    int frenchRealWidth = 18 * 3; // stripeWidth * 3 (bleu + blanc + rouge)
-    int englishRealWidth = 62; // Largeur visible du drapeau anglais (sans codes ANSI)
-
     // Labels avec sélection
     final frenchLabel = language == 0 ? chalk.onPurple.bold('Français') : chalk.grey('Français');
     final englishLabel = language == 1 ? chalk.onPurple.bold('English') : chalk.grey('English');
-
 
     setCursorPosition(35, ((((spacing.length) * 5).floor() * terminalWidth) / 168).floor());
     stdout.write(frenchLabel);
@@ -124,7 +118,15 @@ void selectLanguage() {
     stdout.write(englishLabel);
 
     setCursorPosition((terminalHeight * 0.95).floor(), 0);
-    stdout.writeln(chalk.greyX11("Available keys : ◁ ▷\n⏎ to select\nCtrl+C to exit"));
+    stdout.writeln(
+      chalk.greyX11("Touches disponibes : ◁ ▷\n⏎ pour sélectionner\nCtrl+C pour quitter"),
+    );
+    setCursorPosition((terminalHeight * 0.95).floor(), terminalWidth - 24);
+    stdout.writeln(chalk.greyX11("Available keys : ◁ ▷"));
+    setCursorPosition((terminalHeight * 0.95).floor() + 1, terminalWidth - 24);
+    stdout.writeln(chalk.greyX11("⏎ to select"));
+    setCursorPosition((terminalHeight * 0.95).floor() + 2, terminalWidth - 24);
+    stdout.writeln(chalk.greyX11("Ctrl+C to exit"));
   }
 
   renderScreen();
@@ -140,12 +142,17 @@ void selectLanguage() {
       disableAlternateScreen();
       exit(0);
     }
+    if (key.controlChar == ControlCharacter.enter) {
+      await game();
+    }
   }
 }
 
-void game() async {
-  stdout.writeln(chalk.pink("Here are the available letters : "));
+Future game() async {
+  clearScreen();
   final availableLetters = chooseLetters();
+  stdout.writeln(chalk.pink("Here are the available letters : "));
+
   final wordsPossible = await findPossibleWord(availableLetters);
   stdout.writeln(chalk.lightPink(availableLetters.join(' ')));
   bool won = false;
@@ -153,7 +160,10 @@ void game() async {
 
   while (!won) {
     if (!inProgress) {
+      inProgress = true;
       stdout.writeln(chalk.pink("Enter a world : "));
+      // Afficher le curseur
+      stdout.write('\x1b[?25h');
       String? inputWord = stdin.readLineSync()?.toUpperCase();
 
       if (inputWord != null && inputWord.isNotEmpty) {
@@ -185,9 +195,10 @@ void game() async {
           stdout.writeln(chalk.deepPink("The word '$inputWord' does not exist in the dictionary"));
         }
       } else {
-        inProgress = false;
-        stdout.writeln(chalk.hotPink("No words entered. Please try again."));
+        stdout.writeln(chalk.deepPink("The word '$inputWord' does not exist in the dictionary"));
       }
+    } else {
+      stdout.writeln(chalk.hotPink("No words entered. Please try again."));
     }
   }
 }
@@ -292,7 +303,6 @@ Future<List<String>> findPossibleWord(List<String> availableLetters) async {
   for (String word in frWords) {
     word = word.trim().toUpperCase();
     var dico = {};
-
     for (int i = 0; i < word.length; i++) {
       String letter = word[i];
       if (dico.containsKey(letter)) {

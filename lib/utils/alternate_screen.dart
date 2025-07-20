@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:letters_game/letters_game.dart';
 
-
 void enableAlternateScreen() {
   stdout.write('\x1b[?1049h');
   setCursorPosition((terminalHeight * 0.18).floor(), 0);
@@ -16,4 +15,9 @@ void disableAlternateScreen() {
 
 void setCursorPosition(int row, int col) {
   stdout.write('\x1b[$row;${col}H');
+}
+
+void clearScreen() {
+  stdout.write('\x1b[2J');
+  setCursorPosition(0, 0);
 }
