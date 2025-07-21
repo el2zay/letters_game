@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'dart:math' show Random;
 
 import 'package:chalkdart/chalk.dart';
 import 'package:dart_console/dart_console.dart';
 import 'package:letters_game/resources/fr_dictionnary.dart';
-import 'package:letters_game/utils/alternate_screen.dart';
+import 'package:letters_game/utils/boxdrawer.dart';
+import 'package:letters_game/utils/screen_utils.dart';
 import 'package:letters_game/utils/style_utils.dart';
 
 // Détecter la width du terminal
@@ -12,6 +12,8 @@ final int terminalWidth = stdout.terminalColumns;
 // Détecter la height du terminal
 final int terminalHeight = stdout.terminalLines;
 final console = Console();
+String inputWord = "";
+List<String> wordsFound = [];
 
 void main() {
   enableAlternateScreen();
@@ -20,8 +22,9 @@ void main() {
     disableAlternateScreen();
     exit(0);
   });
-
-  selectLanguage();
+  // TODO remplacer par selectLanguage();
+  newGame();
+  // selectLanguage();
 }
 
 List<String> getFrenchFlagLines({int height = 18, int stripeWidth = 18}) {
@@ -118,9 +121,7 @@ void selectLanguage() async {
     stdout.write(englishLabel);
 
     setCursorPosition((terminalHeight * 0.95).floor(), 0);
-    stdout.writeln(
-      chalk.greyX11("Touches disponibes : ◁ ▷\n⏎ pour sélectionner\nCtrl+C pour quitter"),
-    );
+    stdout.writeln(chalk.greyX11("Touches disponibes : ◁ ▷\n⏎ pour sélectionner\nCtrl+C pour quitter"));
     setCursorPosition((terminalHeight * 0.95).floor(), terminalWidth - 24);
     stdout.writeln(chalk.greyX11("Available keys : ◁ ▷"));
     setCursorPosition((terminalHeight * 0.95).floor() + 1, terminalWidth - 24);
@@ -133,8 +134,7 @@ void selectLanguage() async {
 
   while (true) {
     var key = console.readKey();
-    if (key.controlChar == ControlCharacter.arrowRight ||
-        key.controlChar == ControlCharacter.arrowLeft) {
+    if (key.controlChar == ControlCharacter.arrowRight || key.controlChar == ControlCharacter.arrowLeft) {
       language = (language + 1) % 2;
       renderScreen();
     }
@@ -143,14 +143,118 @@ void selectLanguage() async {
       exit(0);
     }
     if (key.controlChar == ControlCharacter.enter) {
-      await game();
+      await newGame();
     }
+  }
+}
+
+Future newGame() async {
+  clearScreen();
+  final availableLetters = await chooseLetters();
+  setCursorPosition(5, 0);
+  stdout.writeln(printCentered("MOTS TROUVÉS"));
+  drawBox(row: 12, col: 100, startRow: 6, color: chalk.green, centered: true);
+  setCursorPosition((terminalHeight / 2).floor(), 0);
+
+  drawBox(row: 3, col: 100, startRow: 18, color: chalk.white, centered: true);
+
+  // Lettres tapées
+  setCursorPosition((terminalHeight * 0.6).floor(), 0);
+  stdout.writeln(printCentered(chalk.lightPink(availableLetters.join(' '))));
+
+  setCursorPosition(17, ((terminalWidth - 20) / 2).floor() + 1);
+  stdout.write('\x1b[?25h');
+  inputWord = await readFilteredInput(availableLetters);
+}
+
+Future<String> readFilteredInput(List<String> availableLetters) async {
+  final buffer = StringBuffer();
+  final allowed = availableLetters.map((l) => l.toUpperCase()).toSet();
+
+  renderLetters(availableLetters, buffer);
+
+  while (true) {
+    final key = console.readKey();
+    if (key.char == '\n' || key.controlChar == ControlCharacter.enter) {
+      final inputWord = buffer.toString();
+      if (inputWord.isNotEmpty) {
+        await verifyWord(inputWord, availableLetters, buffer);
+        renderLetters(availableLetters, buffer);
+      }
+      continue;
+    }
+    final char = key.char.toUpperCase();
+    // TODO éviter que les lettres soient tapées plusieurs fois
+    if (allowed.contains(char) && RegExp(r'[A-Z]').hasMatch(char)) {
+      buffer.write(char);
+      stdout.write(char);
+      renderLetters(availableLetters, buffer);
+    }
+    if (key.controlChar == ControlCharacter.backspace && buffer.isNotEmpty) {
+      final text = buffer.toString();
+      buffer.clear();
+      buffer.write(text.substring(0, text.length - 1));
+      stdout.write('\b \b');
+      renderLetters(availableLetters, buffer);
+    }
+    if (key.controlChar == ControlCharacter.ctrlC) {
+      disableAlternateScreen();
+      exit(0);
+    }
+  }
+}
+
+void renderLetters(List<String> availableLetters, StringBuffer buffer) {
+  stdout.write('\x1b[?25l');
+  setCursorPosition((terminalHeight * 0.6).floor(), 0);
+  stdout.write('\x1b[2K\r');
+  String line = '';
+  for (int i = 0; i < availableLetters.length; i++) {
+    if (buffer.toString().contains(availableLetters[i])) {
+      line += chalk.grey('${availableLetters[i]} ');
+    } else {
+      line += chalk.lightPink('${availableLetters[i]} ');
+    }
+  }
+  stdout.writeln(printCentered(line));
+  stdout.write('\x1b[?25h');
+  setCursorPosition(19, ((terminalWidth - 20) / 2).floor() + 1 + buffer.length);
+}
+
+// Fonction pour vérifier le mot tapé
+Future<void> verifyWord(String inputWord, List<String> availableLetters, StringBuffer buffer) async {
+  bool exist = await isValidWord(inputWord);
+  if (exist) {
+    final lettersMap = lettersToDico(availableLetters);
+    final wordMap = lettersToDico(inputWord.split(''));
+
+    final wordsPossible = await findPossibleWord(availableLetters);
+    if (isIncluded(wordMap, lettersMap) && wordsPossible.contains(inputWord.toUpperCase())) {
+      // TODO page de victoir
+
+      stdout.writeln(chalk.hotPink("Congrats ! The word '$inputWord' is one of the longest words."));
+    } else if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord.toUpperCase())) {
+      wordsFound.add(inputWord);
+      buffer.clear();
+      setCursorPosition(19, ((terminalWidth - 20) / 2).floor() + 1);
+      for (int i = 0; i < inputWord.length; i++) {
+        stdout.write(' ');
+      }
+      setCursorPosition(7, ((terminalWidth - 20) / 2).floor() + 1);
+      stdout.write('\x1b[2K\r');
+      for (int i = 0; i < wordsFound.length; i++) {
+        setCursorPosition(7 + i, ((terminalWidth - 20) / 2).floor() + 1);
+        stdout.write(chalk.green(wordsFound[i]));
+      }
+    }
+  } else {
+    stdout.writeln(chalk.deepPink("The word '$inputWord' does not exist in the dictionary."));
   }
 }
 
 Future game() async {
   clearScreen();
-  final availableLetters = chooseLetters();
+  final availableLetters = await chooseLetters();
   stdout.writeln(chalk.pink("Here are the available letters : "));
 
   final wordsPossible = await findPossibleWord(availableLetters);
@@ -161,12 +265,15 @@ Future game() async {
   while (!won) {
     if (!inProgress) {
       inProgress = true;
-      stdout.writeln(chalk.pink("Enter a world : "));
+      stdout.writeln(chalk.pink("Enter a word : "));
       // Afficher le curseur
       stdout.write('\x1b[?25h');
       String? inputWord = stdin.readLineSync()?.toUpperCase();
 
-      if (inputWord != null && inputWord.isNotEmpty) {
+      if (inputWord!.isEmpty) {
+        inProgress = false;
+        stdout.writeln(chalk.hotPink("No words entered. Please try again."));
+      } else {
         bool exist = await isValidWord(inputWord);
 
         if (exist) {
@@ -174,36 +281,24 @@ Future game() async {
           final wordMap = lettersToDico(inputWord.split(''));
 
           if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord)) {
-            stdout.writeln(
-              chalk.hotPink("Congrats ! The word $inputWord is one of the longest words."),
-            );
+            stdout.writeln(chalk.hotPink("Congrats ! The word $inputWord is one of the longest words."));
             won = true;
-          } else if (isIncluded(wordMap, lettersMap) &&
-              !wordsPossible.contains(inputWord.toUpperCase())) {
-            stdout.writeln(
-              chalk.hotPink("The word'$inputWord' is correct but not the longest possible."),
-            );
+          } else if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord.toUpperCase())) {
+            stdout.writeln(chalk.hotPink("The word'$inputWord' is correct but not the longest possible."));
             inProgress = false;
           } else {
-            stdout.writeln(
-              chalk.hotPink("The word '$inputWord is not formed with the available letters"),
-            );
+            stdout.writeln(chalk.hotPink("The word '$inputWord is not formed with the available letters"));
             inProgress = false;
           }
         } else {
           inProgress = false;
           stdout.writeln(chalk.deepPink("The word '$inputWord' does not exist in the dictionary"));
         }
-      } else {
-        stdout.writeln(chalk.deepPink("The word '$inputWord' does not exist in the dictionary"));
       }
-    } else {
-      stdout.writeln(chalk.hotPink("No words entered. Please try again."));
     }
   }
 }
 
-// TODO faire plusieurs fonction qui correspondrons à des screens
 // 1 Sélectionner le langage : Drapeau 🇫🇷 et 🇺🇸/🇬🇧 en ASCII
 // 2 Select : Commencer à jouer, Comment jouer, Changer de langue
 // 3 Jeu : demande une taille minimale pour jouer
@@ -244,20 +339,22 @@ List<Map<dynamic, dynamic>> dictionnary = [];
 
 int nbVowels = 0;
 
-List<String> chooseLetters() {
-  List<String> word = [];
-  for (int i = 0; i < 9; i++) {
-    word.add(letters[Random().nextInt(letters.length)]);
-    if (vowels.contains(word[i])) {
-      nbVowels++;
-    }
-  }
+Future<List<String>> chooseLetters() async {
+  // TODO
+  // List<String> selectedLetters = [];
+  // for (int i = 0; i < 9; i++) {
+  //   selectedLetters.add(letters[Random().nextInt(letters.length)]);
+  //   if (vowels.contains(selectedLetters[i])) {
+  //     nbVowels++;
+  //   }
+  // }
 
-  while (nbVowels < 2) {
-    word.clear();
-    chooseLetters();
-  }
-  return word;
+  // while (nbVowels < 2) {
+  //   selectedLetters.clear();
+  //   await chooseLetters();
+  // }
+
+  return ["A", "V", "I", "R", "D", "E", "T"];
 }
 
 Future<bool> isValidWord(String word) async {
@@ -326,9 +423,7 @@ Future<List<String>> findPossibleWord(List<String> availableLetters) async {
 
   if (wordsPossible.isEmpty) return [];
 
-  int maxLength = wordsPossible
-      .map((word) => word.length)
-      .reduce((max, length) => length > max ? length : max);
+  int maxLength = wordsPossible.map((word) => word.length).reduce((max, length) => length > max ? length : max);
 
   return wordsPossible.where((word) => word.length == maxLength).toList();
 }
