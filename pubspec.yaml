@@ -10,8 +10,10 @@ environment:
 dependencies:
   chalkdart: ^3.0.5
   dart_console: ^4.1.2
+  intl: ^0.20.2
   # path: ^1.8.0
 
 dev_dependencies:
   lints: ^5.0.0
   test: ^1.24.0
+  intl_translation: ^0.20.1

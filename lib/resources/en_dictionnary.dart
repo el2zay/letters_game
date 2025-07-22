@@ -1,4 +1,4 @@
-const List<String> frWords = [
+const List<String> enWords = [
   'a',
   'aa',
   'aaa',

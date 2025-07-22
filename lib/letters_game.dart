@@ -2,29 +2,31 @@ import 'dart:io';
 
 import 'package:chalkdart/chalk.dart';
 import 'package:dart_console/dart_console.dart';
+import 'package:letters_game/resources/en_dictionnary.dart';
 import 'package:letters_game/resources/fr_dictionnary.dart';
 import 'package:letters_game/utils/boxdrawer.dart';
 import 'package:letters_game/utils/screen_utils.dart';
 import 'package:letters_game/utils/style_utils.dart';
+import 'package:intl/intl.dart';
+import 'l10n/messages_all.dart';
 
-// Détecter la width du terminal
 final int terminalWidth = stdout.terminalColumns;
-// Détecter la height du terminal
 final int terminalHeight = stdout.terminalLines;
 final console = Console();
 String inputWord = "";
 List<String> wordsFound = [];
+List<String> words = frWords;
 
-void main() {
+void main() async {
   enableAlternateScreen();
   stdout.write('\x1b[?25l');
   ProcessSignal.sigint.watch().listen((_) {
     disableAlternateScreen();
     exit(0);
   });
-  // TODO remplacer par selectLanguage();
-  newGame();
-  // selectLanguage();
+  await initializeMessages('en');
+  Intl.defaultLocale = 'en';
+  selectLanguage();
 }
 
 List<String> getFrenchFlagLines({int height = 18, int stripeWidth = 18}) {
@@ -108,10 +110,9 @@ void selectLanguage() async {
       final combinedLine = frenchLine + spacing + englishLine;
       stdout.writeln(printCentered(combinedLine));
     }
-    // Après l'affichage des drapeaux
+
     stdout.writeln();
 
-    // Labels avec sélection
     final frenchLabel = language == 0 ? chalk.onPurple.bold('Français') : chalk.grey('Français');
     final englishLabel = language == 1 ? chalk.onPurple.bold('English') : chalk.grey('English');
 
@@ -143,6 +144,8 @@ void selectLanguage() async {
       exit(0);
     }
     if (key.controlChar == ControlCharacter.enter) {
+      Intl.defaultLocale = language == 0 ? 'fr' : 'en';
+      words = language == 0 ? frWords : enWords;
       await newGame();
     }
   }
@@ -152,16 +155,12 @@ Future newGame() async {
   clearScreen();
   final availableLetters = await chooseLetters();
   setCursorPosition(5, 0);
-  stdout.writeln(printCentered("MOTS TROUVÉS"));
+  stdout.writeln(printCentered(Intl.message("MOTS TROUVÉS", name: "words_found")));
   drawBox(row: 12, col: 100, startRow: 6, color: chalk.green, centered: true);
   setCursorPosition((terminalHeight / 2).floor(), 0);
-
   drawBox(row: 3, col: 100, startRow: 18, color: chalk.white, centered: true);
-
-  // Lettres tapées
   setCursorPosition((terminalHeight * 0.6).floor(), 0);
   stdout.writeln(printCentered(chalk.lightPink(availableLetters.join(' '))));
-
   setCursorPosition(17, ((terminalWidth - 20) / 2).floor() + 1);
   stdout.write('\x1b[?25h');
   inputWord = await readFilteredInput(availableLetters);
@@ -184,7 +183,6 @@ Future<String> readFilteredInput(List<String> availableLetters) async {
       continue;
     }
     final char = key.char.toUpperCase();
-    // TODO éviter que les lettres soient tapées plusieurs fois
     if (allowed.contains(char) && RegExp(r'[A-Z]').hasMatch(char)) {
       buffer.write(char);
       stdout.write(char);
@@ -221,18 +219,18 @@ void renderLetters(List<String> availableLetters, StringBuffer buffer) {
   setCursorPosition(19, ((terminalWidth - 20) / 2).floor() + 1 + buffer.length);
 }
 
-// Fonction pour vérifier le mot tapé
 Future<void> verifyWord(String inputWord, List<String> availableLetters, StringBuffer buffer) async {
   bool exist = await isValidWord(inputWord);
   if (exist) {
     final lettersMap = lettersToDico(availableLetters);
     final wordMap = lettersToDico(inputWord.split(''));
-
     final wordsPossible = await findPossibleWord(availableLetters);
     if (isIncluded(wordMap, lettersMap) && wordsPossible.contains(inputWord.toUpperCase())) {
-      // TODO page de victoir
-
-      stdout.writeln(chalk.hotPink("Congrats ! The word '$inputWord' is one of the longest words."));
+      stdout.writeln(
+        chalk.hotPink(
+          Intl.message("Bravo ! Le mot '$inputWord' est un des plus longs.", name: "win_congrats", args: []),
+        ),
+      );
     } else if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord.toUpperCase())) {
       wordsFound.add(inputWord);
       buffer.clear();
@@ -248,60 +246,90 @@ Future<void> verifyWord(String inputWord, List<String> availableLetters, StringB
       }
     }
   } else {
-    stdout.writeln(chalk.deepPink("The word '$inputWord' does not exist in the dictionary."));
+    stdout.writeln(
+      chalk.deepPink(
+        Intl.message("Le mot '$inputWord' n'existe pas dans le dictionnaire.", name: "invalid_word", args: []),
+      ),
+    );
   }
 }
 
-Future game() async {
-  clearScreen();
-  final availableLetters = await chooseLetters();
-  stdout.writeln(chalk.pink("Here are the available letters : "));
+// Future game() async {
+//   clearScreen();
+//   final availableLetters = await chooseLetters();
+//   stdout.writeln(chalk.pink(Intl.message("Voici les lettres disponibles :", name: "available_letters")));
+//   final wordsPossible = await findPossibleWord(availableLetters);
+//   stdout.writeln(chalk.lightPink(availableLetters.join(' ')));
+//   bool won = false;
+//   bool inProgress = false;
 
-  final wordsPossible = await findPossibleWord(availableLetters);
-  stdout.writeln(chalk.lightPink(availableLetters.join(' ')));
-  bool won = false;
-  bool inProgress = false;
+//   while (!won) {
+//     if (!inProgress) {
+//       inProgress = true;
+//       stdout.writeln(chalk.pink(Intl.message("Entrez un mot :", name: "enter_word")));
+//       stdout.write('\x1b[?25h');
+//       String? inputWord = stdin.readLineSync()?.toUpperCase();
 
-  while (!won) {
-    if (!inProgress) {
-      inProgress = true;
-      stdout.writeln(chalk.pink("Enter a word : "));
-      // Afficher le curseur
-      stdout.write('\x1b[?25h');
-      String? inputWord = stdin.readLineSync()?.toUpperCase();
+//       if (inputWord!.isEmpty) {
+//         inProgress = false;
+//         stdout.writeln(chalk.hotPink(Intl.message("Aucun mot entré. Veuillez réessayer.", name: "empty_word")));
+//       } else {
+//         bool exist = await isValidWord(inputWord);
 
-      if (inputWord!.isEmpty) {
-        inProgress = false;
-        stdout.writeln(chalk.hotPink("No words entered. Please try again."));
-      } else {
-        bool exist = await isValidWord(inputWord);
+//         if (exist) {
+//           final lettersMap = lettersToDico(availableLetters);
+//           final wordMap = lettersToDico(inputWord.split(''));
 
-        if (exist) {
-          final lettersMap = lettersToDico(availableLetters);
-          final wordMap = lettersToDico(inputWord.split(''));
-
-          if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord)) {
-            stdout.writeln(chalk.hotPink("Congrats ! The word $inputWord is one of the longest words."));
-            won = true;
-          } else if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord.toUpperCase())) {
-            stdout.writeln(chalk.hotPink("The word'$inputWord' is correct but not the longest possible."));
-            inProgress = false;
-          } else {
-            stdout.writeln(chalk.hotPink("The word '$inputWord is not formed with the available letters"));
-            inProgress = false;
-          }
-        } else {
-          inProgress = false;
-          stdout.writeln(chalk.deepPink("The word '$inputWord' does not exist in the dictionary"));
-        }
-      }
-    }
-  }
-}
-
-// 1 Sélectionner le langage : Drapeau 🇫🇷 et 🇺🇸/🇬🇧 en ASCII
-// 2 Select : Commencer à jouer, Comment jouer, Changer de langue
-// 3 Jeu : demande une taille minimale pour jouer
+//           if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord)) {
+//             stdout.writeln(
+//               chalk.hotPink(
+//                 Intl.message(
+//                   "Bravo ! Le mot $inputWord est un des plus longs.",
+//                   name: "win_congrats_alt",
+//                  args: [],
+//                 ),
+//               ),
+//             );
+//             won = true;
+//           } else if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord.toUpperCase())) {
+//             stdout.writeln(
+//               chalk.hotPink(
+//                 Intl.message(
+//                   "Le mot '$inputWord' est correct mais pas le plus long possible.",
+//                   name: "not_longest",
+//                  args: [],
+//                 ),
+//               ),
+//             );
+//             inProgress = false;
+//           } else {
+//             stdout.writeln(
+//               chalk.hotPink(
+//                 Intl.message(
+//                   "Le mot '$inputWord' ne peut pas être formé avec les lettres disponibles.",
+//                   name: "not_buildable",
+//                  args: [],
+//                 ),
+//               ),
+//             );
+//             inProgress = false;
+//           }
+//         } else {
+//           inProgress = false;
+//           stdout.writeln(
+//             chalk.deepPink(
+//               Intl.message(
+//                 "Le mot '$inputWord' n'existe pas dans le dictionnaire.",
+//                 name: "invalid_word_alt",
+//                args: [],
+//               ),
+//             ),
+//           );
+//         }
+//       }
+//     }
+//   }
+// }
 
 List<String> letters = [
   'A',
@@ -340,25 +368,11 @@ List<Map<dynamic, dynamic>> dictionnary = [];
 int nbVowels = 0;
 
 Future<List<String>> chooseLetters() async {
-  // TODO
-  // List<String> selectedLetters = [];
-  // for (int i = 0; i < 9; i++) {
-  //   selectedLetters.add(letters[Random().nextInt(letters.length)]);
-  //   if (vowels.contains(selectedLetters[i])) {
-  //     nbVowels++;
-  //   }
-  // }
-
-  // while (nbVowels < 2) {
-  //   selectedLetters.clear();
-  //   await chooseLetters();
-  // }
-
   return ["A", "V", "I", "R", "D", "E", "T"];
 }
 
 Future<bool> isValidWord(String word) async {
-  for (String w in frWords) {
+  for (String w in words) {
     if (w.trim().toUpperCase() == word.toUpperCase()) {
       return true;
     }
@@ -397,7 +411,7 @@ bool isIncluded(Map word1, Map word2) {
 Future<List<String>> findPossibleWord(List<String> availableLetters) async {
   dictionnary.clear();
 
-  for (String word in frWords) {
+  for (String word in words) {
     word = word.trim().toUpperCase();
     var dico = {};
     for (int i = 0; i < word.length; i++) {
@@ -413,8 +427,8 @@ Future<List<String>> findPossibleWord(List<String> availableLetters) async {
   Map lettersMap = lettersToDico(availableLetters);
   List<String> wordsPossible = [];
 
-  for (int i = 0; i < frWords.length; i++) {
-    String word = frWords[i].trim().toUpperCase();
+  for (int i = 0; i < words.length; i++) {
+    String word = words[i].trim().toUpperCase();
 
     if (isIncluded(dictionnary[i], lettersMap)) {
       wordsPossible.add(word);
