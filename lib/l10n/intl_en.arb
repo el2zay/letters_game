@@ -5,7 +5,12 @@
   "invalid_word": "The word does not exist in the dictionary.",
   "available_letters": "Here are the available letters:",
   "enter_word": "Enter a word:",
-  "empty_word": "No word entered. Please try again.",
+  "already_found": "The word {word} has already been found.",
+  "@already_found": {
+    "placeholders": {
+      "word": {}
+    }
+  },
   "not_longest": "The word is correct but not the longest possible.",
   "not_buildable": "The word cannot be formed with the available letters."
 }

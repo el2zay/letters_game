@@ -16,6 +16,9 @@ final console = Console();
 String inputWord = "";
 List<String> wordsFound = [];
 List<String> words = frWords;
+bool showErrorMsg = false;
+
+// TODO le rendre responsive
 
 void main() async {
   enableAlternateScreen();
@@ -156,7 +159,7 @@ Future newGame() async {
   final availableLetters = await chooseLetters();
   setCursorPosition(5, 0);
   stdout.writeln(printCentered(Intl.message("MOTS TROUVÉS", name: "words_found")));
-  drawBox(row: 12, col: 100, startRow: 6, color: chalk.green, centered: true);
+  drawBox(row: terminalHeight * 0.3, col: 100, startRow: 6, color: chalk.green, centered: true);
   setCursorPosition((terminalHeight / 2).floor(), 0);
   drawBox(row: 3, col: 100, startRow: 18, color: chalk.white, centered: true);
   setCursorPosition((terminalHeight * 0.6).floor(), 0);
@@ -171,7 +174,7 @@ Future<String> readFilteredInput(List<String> availableLetters) async {
   final allowed = availableLetters.map((l) => l.toUpperCase()).toSet();
 
   renderLetters(availableLetters, buffer);
-
+  // while true Toutes les 100ms
   while (true) {
     final key = console.readKey();
     if (key.char == '\n' || key.controlChar == ControlCharacter.enter) {
@@ -187,6 +190,7 @@ Future<String> readFilteredInput(List<String> availableLetters) async {
       buffer.write(char);
       stdout.write(char);
       renderLetters(availableLetters, buffer);
+      clearErrorMessage(buffer);
     }
     if (key.controlChar == ControlCharacter.backspace && buffer.isNotEmpty) {
       final text = buffer.toString();
@@ -194,6 +198,7 @@ Future<String> readFilteredInput(List<String> availableLetters) async {
       buffer.write(text.substring(0, text.length - 1));
       stdout.write('\b \b');
       renderLetters(availableLetters, buffer);
+      clearErrorMessage(buffer);
     }
     if (key.controlChar == ControlCharacter.ctrlC) {
       disableAlternateScreen();
@@ -219,7 +224,29 @@ void renderLetters(List<String> availableLetters, StringBuffer buffer) {
   setCursorPosition(19, ((terminalWidth - 20) / 2).floor() + 1 + buffer.length);
 }
 
+void showError(String message, Chalk color) {
+  showErrorMsg = true;
+  setCursorPosition((terminalHeight * 0.55).floor(), 0);
+  stdout.writeln(printCentered(color(message)));
+}
+
+void clearErrorMessage(StringBuffer buffer) {
+  if (showErrorMsg) {
+    setCursorPosition((terminalHeight * 0.55).floor(), 0);
+    stdout.write('\x1b[2K\r');
+    showErrorMsg = false;
+    setCursorPosition(19, ((terminalWidth - 20) / 2).floor() + 1 + buffer.length);
+  }
+}
+
 Future<void> verifyWord(String inputWord, List<String> availableLetters, StringBuffer buffer) async {
+  if (wordsFound.contains(inputWord)) {
+    showError(
+      Intl.message("Le mot '$inputWord' a déjà été trouvé.", name: "already_found", args: [inputWord]),
+      chalk.greenYellow,
+    );
+    return;
+  }
   bool exist = await isValidWord(inputWord);
   if (exist) {
     final lettersMap = lettersToDico(availableLetters);
@@ -246,10 +273,9 @@ Future<void> verifyWord(String inputWord, List<String> availableLetters, StringB
       }
     }
   } else {
-    stdout.writeln(
-      chalk.deepPink(
-        Intl.message("Le mot '$inputWord' n'existe pas dans le dictionnaire.", name: "invalid_word", args: []),
-      ),
+    showError(
+      Intl.message("Le mot '$inputWord' n'existe pas dans le dictionnaire.", name: "invalid_word", args: []),
+      chalk.deepPink,
     );
   }
 }

@@ -4,7 +4,7 @@ import 'package:chalkdart/chalk.dart';
 import 'package:letters_game/utils/screen_utils.dart';
 
 void drawBox({
-  required int row,
+  required double row,
   required int col,
   int startRow = 1,
   int startCol = 1,
@@ -17,6 +17,7 @@ void drawBox({
   const topRight = '╮';
   const bottomLeft = '╰';
   const bottomRight = "╯";
+
 
   String style(String char) => color != null ? color(char) : char;
 
@@ -38,7 +39,7 @@ void drawBox({
     stdout.write(style(vertical));
   }
 
-  setCursorPosition(startRow + row - 1, actualStartCol);
+  setCursorPosition(startRow + row.toInt() - 1, actualStartCol);
   stdout.write(style(bottomLeft));
   stdout.write(style(horizontal * (col - 2)));
   stdout.write(style(bottomRight));

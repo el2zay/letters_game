@@ -29,7 +29,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "invalid_word": MessageLookupByLibrary.simpleMessage("The word does not exist in the dictionary."),
         "available_letters": MessageLookupByLibrary.simpleMessage("Here are the available letters:"),
         "enter_word": MessageLookupByLibrary.simpleMessage("Enter a word:"),
-        "empty_word": MessageLookupByLibrary.simpleMessage("No word entered. Please try again."),
+        "already_found": (word) => "The word $word has already been found.",
         "not_longest": MessageLookupByLibrary.simpleMessage("The word is correct but not the longest possible."),
         "not_buildable": MessageLookupByLibrary.simpleMessage("The word cannot be formed with the available letters."),
       };
