@@ -34,15 +34,21 @@ void main() async {
 }
 
 void screenSizeRequired() {
+  // Le booléen permet de stopper la boucle quand la condition est remplie.
   while (stdout.terminalLines < 33 || stdout.terminalColumns < 156) {
     console.hideCursor();
-    // final key = console.readKey();
-    // if (key.isControl && key.controlChar == ControlCharacter.ctrlC) {
-    //   disableAlternateScreen();
-    //   exit(0);
-    // }
-    showError(printCentered("La taille de votre terminal est trop petite. Min height: 33 | width: 156 "), chalk.red);
+    showError(
+      printCentered(
+        Intl.message(
+          "La taille de votre terminal est trop petite. Min height: 33 | width: 156 ",
+          name: "terminal_size_error",
+        ),
+      ),
+      chalk.red,
+      0.5,
+    );
   }
+
   terminalHeight = stdout.terminalLines;
   terminalWidth = stdout.terminalColumns;
 }
@@ -237,15 +243,15 @@ void renderLetters(List<String> availableLetters, StringBuffer buffer) {
   setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2) + 1 + buffer.length);
 }
 
-void showError(String message, Chalk color) {
+void showError(String message, Chalk color, [double ratio = 0.6]) {
   showErrorMsg = true;
-  setCursorPosition((terminalHeight * 0.6), 0);
+  setCursorPosition((terminalHeight * ratio), 0);
   stdout.writeln(printCentered(color(message)));
 }
 
 void clearErrorMessage(StringBuffer buffer) {
   if (showErrorMsg) {
-    setCursorPosition((terminalHeight * 0.55), 0);
+    setCursorPosition((terminalHeight * 0.6), 0);
     stdout.write('\x1b[2K\r');
     showErrorMsg = false;
     setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2) + 1 + buffer.length);

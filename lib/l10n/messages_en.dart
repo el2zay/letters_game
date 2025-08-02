@@ -32,5 +32,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "already_found": (word) => "The word $word has already been found.",
         "not_longest": MessageLookupByLibrary.simpleMessage("The word is correct but not the longest possible."),
         "not_buildable": MessageLookupByLibrary.simpleMessage("The word cannot be formed with the available letters."),
+        "terminal_size_error":
+            MessageLookupByLibrary.simpleMessage("The size of your terminal is too small. Min height: 33 | width: 156"),
       };
 }
