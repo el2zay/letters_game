@@ -14,9 +14,9 @@ void disableAlternateScreen() {
   stdout.write('\x1b[?25h');
 }
 
-void setCursorPosition(int row, int col) {
+void setCursorPosition(num row, num col) {
   stdout.write('\x1b[0;0H');
-  stdout.write('\x1b[$row;${col}H');
+  stdout.write('\x1b[${row.toInt()};${col.toInt()}H');
 }
 
 void clearScreen() {

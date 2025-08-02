@@ -1,35 +1,50 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:chalkdart/chalk.dart';
 import 'package:dart_console/dart_console.dart';
-import 'package:letters_game/resources/en_dictionnary.dart';
-import 'package:letters_game/resources/fr_dictionnary.dart';
+import 'package:letters_game/resources/en_dictionary.dart';
+import 'package:letters_game/resources/fr_dictionary.dart';
 import 'package:letters_game/utils/boxdrawer.dart';
 import 'package:letters_game/utils/screen_utils.dart';
 import 'package:letters_game/utils/style_utils.dart';
+
 import 'package:intl/intl.dart';
 import 'l10n/messages_all.dart';
 
-final int terminalWidth = stdout.terminalColumns;
-final int terminalHeight = stdout.terminalLines;
+var terminalWidth = stdout.terminalColumns;
+var terminalHeight = stdout.terminalLines;
 final console = Console();
 String inputWord = "";
 List<String> wordsFound = [];
 List<String> words = frWords;
 bool showErrorMsg = false;
 
-// TODO le rendre responsive
-
 void main() async {
   enableAlternateScreen();
-  stdout.write('\x1b[?25l');
+  console.hideCursor();
   ProcessSignal.sigint.watch().listen((_) {
     disableAlternateScreen();
     exit(0);
   });
   await initializeMessages('en');
   Intl.defaultLocale = 'en';
+  screenSizeRequired();
   selectLanguage();
+}
+
+void screenSizeRequired() {
+  while (stdout.terminalLines < 33 || stdout.terminalColumns < 156) {
+    console.hideCursor();
+    // final key = console.readKey();
+    // if (key.isControl && key.controlChar == ControlCharacter.ctrlC) {
+    //   disableAlternateScreen();
+    //   exit(0);
+    // }
+    showError(printCentered("La taille de votre terminal est trop petite. Min height: 33 | width: 156 "), chalk.red);
+  }
+  terminalHeight = stdout.terminalLines;
+  terminalWidth = stdout.terminalColumns;
 }
 
 List<String> getFrenchFlagLines({int height = 18, int stripeWidth = 18}) {
@@ -101,10 +116,9 @@ void selectLanguage() async {
 
   void renderScreen() {
     console.clearScreen();
-    setCursorPosition((terminalHeight * 0.18).floor(), 0);
+    setCursorPosition(terminalHeight * 0.12, 0);
     stdout.writeln(printCentered(chalk.deepPink("Sélectionnez votre langue !\n")));
     stdout.writeln(printCentered(chalk.deepPink("Select your language !\n\n\n")));
-
     final maxLines = [frenchLines.length, englishLines.length].reduce((a, b) => a > b ? a : b);
 
     for (int i = 0; i < maxLines; i++) {
@@ -119,18 +133,18 @@ void selectLanguage() async {
     final frenchLabel = language == 0 ? chalk.onPurple.bold('Français') : chalk.grey('Français');
     final englishLabel = language == 1 ? chalk.onPurple.bold('English') : chalk.grey('English');
 
-    setCursorPosition(35, ((((spacing.length) * 5).floor() * terminalWidth) / 168).floor());
+    setCursorPosition(terminalHeight * 0.85, ((((spacing.length) * 5) * terminalWidth) / 168));
     stdout.write(frenchLabel);
-    setCursorPosition(35, ((((spacing.length) * 12.7).floor() * terminalWidth) / 168).floor());
+    setCursorPosition(terminalHeight * 0.85, ((((spacing.length) * 12.7) * terminalWidth) / 168));
     stdout.write(englishLabel);
 
-    setCursorPosition((terminalHeight * 0.95).floor(), 0);
+    setCursorPosition((terminalHeight * 0.92), 0);
     stdout.writeln(chalk.greyX11("Touches disponibes : ◁ ▷\n⏎ pour sélectionner\nCtrl+C pour quitter"));
-    setCursorPosition((terminalHeight * 0.95).floor(), terminalWidth - 24);
+    setCursorPosition((terminalHeight * 0.92), terminalWidth - 24);
     stdout.writeln(chalk.greyX11("Available keys : ◁ ▷"));
-    setCursorPosition((terminalHeight * 0.95).floor() + 1, terminalWidth - 24);
+    setCursorPosition((terminalHeight * 0.92) + 1, terminalWidth - 24);
     stdout.writeln(chalk.greyX11("⏎ to select"));
-    setCursorPosition((terminalHeight * 0.95).floor() + 2, terminalWidth - 24);
+    setCursorPosition((terminalHeight * 0.92) + 2, terminalWidth - 24);
     stdout.writeln(chalk.greyX11("Ctrl+C to exit"));
   }
 
@@ -157,14 +171,14 @@ void selectLanguage() async {
 Future newGame() async {
   clearScreen();
   final availableLetters = await chooseLetters();
-  setCursorPosition(5, 0);
+  setCursorPosition(4, 0);
   stdout.writeln(printCentered(Intl.message("MOTS TROUVÉS", name: "words_found")));
-  drawBox(row: terminalHeight * 0.3, col: 100, startRow: 6, color: chalk.green, centered: true);
-  setCursorPosition((terminalHeight / 2).floor(), 0);
-  drawBox(row: 3, col: 100, startRow: 18, color: chalk.white, centered: true);
-  setCursorPosition((terminalHeight * 0.6).floor(), 0);
+  drawBox(row: terminalHeight * 0.35, col: 100, startRow: terminalHeight * 0.15, color: chalk.green, centered: true);
+  setCursorPosition((terminalHeight / 2), 0);
+  drawBox(row: 3, col: 100, startRow: terminalHeight * 0.5, color: chalk.white, centered: true);
+  setCursorPosition((terminalHeight * 0.65), 0);
   stdout.writeln(printCentered(chalk.lightPink(availableLetters.join(' '))));
-  setCursorPosition(17, ((terminalWidth - 20) / 2).floor() + 1);
+  setCursorPosition(35, ((terminalWidth - 20) / 2) + 1);
   stdout.write('\x1b[?25h');
   inputWord = await readFilteredInput(availableLetters);
 }
@@ -174,7 +188,6 @@ Future<String> readFilteredInput(List<String> availableLetters) async {
   final allowed = availableLetters.map((l) => l.toUpperCase()).toSet();
 
   renderLetters(availableLetters, buffer);
-  // while true Toutes les 100ms
   while (true) {
     final key = console.readKey();
     if (key.char == '\n' || key.controlChar == ControlCharacter.enter) {
@@ -209,7 +222,7 @@ Future<String> readFilteredInput(List<String> availableLetters) async {
 
 void renderLetters(List<String> availableLetters, StringBuffer buffer) {
   stdout.write('\x1b[?25l');
-  setCursorPosition((terminalHeight * 0.6).floor(), 0);
+  setCursorPosition((terminalHeight * 0.65), 0);
   stdout.write('\x1b[2K\r');
   String line = '';
   for (int i = 0; i < availableLetters.length; i++) {
@@ -221,21 +234,21 @@ void renderLetters(List<String> availableLetters, StringBuffer buffer) {
   }
   stdout.writeln(printCentered(line));
   stdout.write('\x1b[?25h');
-  setCursorPosition(19, ((terminalWidth - 20) / 2).floor() + 1 + buffer.length);
+  setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2) + 1 + buffer.length);
 }
 
 void showError(String message, Chalk color) {
   showErrorMsg = true;
-  setCursorPosition((terminalHeight * 0.55).floor(), 0);
+  setCursorPosition((terminalHeight * 0.6), 0);
   stdout.writeln(printCentered(color(message)));
 }
 
 void clearErrorMessage(StringBuffer buffer) {
   if (showErrorMsg) {
-    setCursorPosition((terminalHeight * 0.55).floor(), 0);
+    setCursorPosition((terminalHeight * 0.55), 0);
     stdout.write('\x1b[2K\r');
     showErrorMsg = false;
-    setCursorPosition(19, ((terminalWidth - 20) / 2).floor() + 1 + buffer.length);
+    setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2) + 1 + buffer.length);
   }
 }
 
@@ -261,14 +274,14 @@ Future<void> verifyWord(String inputWord, List<String> availableLetters, StringB
     } else if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord.toUpperCase())) {
       wordsFound.add(inputWord);
       buffer.clear();
-      setCursorPosition(19, ((terminalWidth - 20) / 2).floor() + 1);
+      setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2) + 1);
       for (int i = 0; i < inputWord.length; i++) {
         stdout.write(' ');
       }
-      setCursorPosition(7, ((terminalWidth - 20) / 2).floor() + 1);
+      setCursorPosition(7, ((terminalWidth - 20) / 2) + 1);
       stdout.write('\x1b[2K\r');
       for (int i = 0; i < wordsFound.length; i++) {
-        setCursorPosition(7 + i, ((terminalWidth - 20) / 2).floor() + 1);
+        setCursorPosition(7 + i, ((terminalWidth - 20) / 2) + 1);
         stdout.write(chalk.green(wordsFound[i]));
       }
     }
@@ -279,83 +292,6 @@ Future<void> verifyWord(String inputWord, List<String> availableLetters, StringB
     );
   }
 }
-
-// Future game() async {
-//   clearScreen();
-//   final availableLetters = await chooseLetters();
-//   stdout.writeln(chalk.pink(Intl.message("Voici les lettres disponibles :", name: "available_letters")));
-//   final wordsPossible = await findPossibleWord(availableLetters);
-//   stdout.writeln(chalk.lightPink(availableLetters.join(' ')));
-//   bool won = false;
-//   bool inProgress = false;
-
-//   while (!won) {
-//     if (!inProgress) {
-//       inProgress = true;
-//       stdout.writeln(chalk.pink(Intl.message("Entrez un mot :", name: "enter_word")));
-//       stdout.write('\x1b[?25h');
-//       String? inputWord = stdin.readLineSync()?.toUpperCase();
-
-//       if (inputWord!.isEmpty) {
-//         inProgress = false;
-//         stdout.writeln(chalk.hotPink(Intl.message("Aucun mot entré. Veuillez réessayer.", name: "empty_word")));
-//       } else {
-//         bool exist = await isValidWord(inputWord);
-
-//         if (exist) {
-//           final lettersMap = lettersToDico(availableLetters);
-//           final wordMap = lettersToDico(inputWord.split(''));
-
-//           if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord)) {
-//             stdout.writeln(
-//               chalk.hotPink(
-//                 Intl.message(
-//                   "Bravo ! Le mot $inputWord est un des plus longs.",
-//                   name: "win_congrats_alt",
-//                  args: [],
-//                 ),
-//               ),
-//             );
-//             won = true;
-//           } else if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord.toUpperCase())) {
-//             stdout.writeln(
-//               chalk.hotPink(
-//                 Intl.message(
-//                   "Le mot '$inputWord' est correct mais pas le plus long possible.",
-//                   name: "not_longest",
-//                  args: [],
-//                 ),
-//               ),
-//             );
-//             inProgress = false;
-//           } else {
-//             stdout.writeln(
-//               chalk.hotPink(
-//                 Intl.message(
-//                   "Le mot '$inputWord' ne peut pas être formé avec les lettres disponibles.",
-//                   name: "not_buildable",
-//                  args: [],
-//                 ),
-//               ),
-//             );
-//             inProgress = false;
-//           }
-//         } else {
-//           inProgress = false;
-//           stdout.writeln(
-//             chalk.deepPink(
-//               Intl.message(
-//                 "Le mot '$inputWord' n'existe pas dans le dictionnaire.",
-//                 name: "invalid_word_alt",
-//                args: [],
-//               ),
-//             ),
-//           );
-//         }
-//       }
-//     }
-//   }
-// }
 
 List<String> letters = [
   'A',
@@ -389,12 +325,29 @@ List<String> letters = [
 List<String> vowels = ['A', 'E', 'I', 'O', 'U'];
 
 List<String> word = [];
-List<Map<dynamic, dynamic>> dictionnary = [];
+List<Map<dynamic, dynamic>> dictionary = [];
 
 int nbVowels = 0;
 
+// TODO randomize letters
 Future<List<String>> chooseLetters() async {
-  return ["A", "V", "I", "R", "D", "E", "T"];
+  List<String> availableLetters = [];
+  int nbLetters = 7;
+
+  while (availableLetters.length < nbLetters) {
+    String letter = letters[Random().nextInt(letters.length)];
+    if (availableLetters.contains(letter)) continue;
+    availableLetters.add(letter);
+    if (vowels.contains(letter)) {
+      nbVowels++;
+    }
+  }
+
+  if (nbVowels < 2) {
+    availableLetters[Random().nextInt(availableLetters.length)] = vowels[Random().nextInt(vowels.length)];
+  }
+
+  return availableLetters;
 }
 
 Future<bool> isValidWord(String word) async {
@@ -435,7 +388,7 @@ bool isIncluded(Map word1, Map word2) {
 }
 
 Future<List<String>> findPossibleWord(List<String> availableLetters) async {
-  dictionnary.clear();
+  dictionary.clear();
 
   for (String word in words) {
     word = word.trim().toUpperCase();
@@ -448,7 +401,7 @@ Future<List<String>> findPossibleWord(List<String> availableLetters) async {
         dico[letter] = 1;
       }
     }
-    dictionnary.add(dico);
+    dictionary.add(dico);
   }
   Map lettersMap = lettersToDico(availableLetters);
   List<String> wordsPossible = [];
@@ -456,7 +409,7 @@ Future<List<String>> findPossibleWord(List<String> availableLetters) async {
   for (int i = 0; i < words.length; i++) {
     String word = words[i].trim().toUpperCase();
 
-    if (isIncluded(dictionnary[i], lettersMap)) {
+    if (isIncluded(dictionary[i], lettersMap)) {
       wordsPossible.add(word);
     }
   }

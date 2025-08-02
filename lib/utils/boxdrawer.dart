@@ -6,8 +6,8 @@ import 'package:letters_game/utils/screen_utils.dart';
 void drawBox({
   required double row,
   required int col,
-  int startRow = 1,
-  int startCol = 1,
+  num startRow = 1,
+  num startCol = 1,
   Chalk? color,
   bool centered = false,
 }) {
@@ -21,7 +21,7 @@ void drawBox({
 
   String style(String char) => color != null ? color(char) : char;
 
-  int actualStartCol = startCol;
+  num actualStartCol = startCol;
   if (centered) {
     int terminalWidth = stdout.terminalColumns;
     actualStartCol = ((terminalWidth - col) / 2).round();
