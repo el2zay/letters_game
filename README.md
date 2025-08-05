@@ -13,7 +13,7 @@ By default the game supplies **9 letters** containing **at least 2 vowels**.
 > You can adjust the total number of letters and the minimum vowel count in the game settings.
 
 The word lists come from open-source dictionaries found online, so abbreviations, archaic forms, or errors may appear.  
-In the French word set, accented characters are ignored.
+In french, accented characters are ignored.
 
 The game calls no external API and **does not require an Internet connection**.
 
@@ -28,7 +28,7 @@ chmod +x <executable_name>
 The game stores **no data**.  
 To uninstall it, just delete the executable.
 
-## Terminal supporté 
+## Supported terminal
 ### 🍏 macOS
 - Terminal ❌
 - Hyper ✅ (recommended)
