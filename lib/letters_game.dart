@@ -19,6 +19,9 @@ String inputWord = "";
 List<String> wordsFound = [];
 List<String> words = frWords;
 bool showErrorMsg = false;
+int letterCount = 0;
+int nbVowels = 2;
+int nbLetters = 9;
 
 void main() async {
   enableAlternateScreen();
@@ -170,11 +173,205 @@ void selectLanguage() async {
       Intl.defaultLocale = language == 0 ? 'fr' : 'en';
       words = language == 0 ? frWords : enWords;
       await newGame();
+      return;
+    }
+  }
+}
+
+void selectMenu(int select) {
+  setCursorPosition(terminalHeight * 0.75, 0);
+
+  stdout.writeln(
+    printCentered(
+      select == 0
+          ? chalk.bgMagenta(Intl.message("1. Comment jouer ?", name: "how_to_play"))
+          : Intl.message("1. Comment jouer ?", name: "how_to_play"),
+    ),
+  );
+  stdout.writeln();
+  stdout.writeln(
+    printCentered(
+      select == 1
+          ? chalk.bgMagenta(Intl.message("2. Menu principal ", name: "main_menu"))
+          : Intl.message("2. Menu principal ", name: "main_menu"),
+    ),
+  );
+  stdout.writeln();
+  stdout.writeln(
+    printCentered(
+      select == 2
+          ? chalk.bgMagenta(Intl.message("3. Paramètres     ", name: "settings"))
+          : Intl.message("3. Paramètres     ", name: "settings"),
+    ),
+  );
+  stdout.writeln();
+  stdout.writeln(
+    printCentered(
+      select == 3
+          ? chalk.bgMagenta(Intl.message("4. Quitter le jeu ", name: "quit"))
+          : Intl.message("4. Quitter le jeu ", name: "quit"),
+    ),
+  );
+
+  if (select == -1) {
+    setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2));
+    stdout.write(' ');
+  }
+}
+
+void howToPlay() async {
+  clearScreen();
+  console.hideCursor();
+  setCursorPosition(terminalHeight * 0.1, 0);
+  stdout.writeln(
+    printCentered("""
+                         
+ ____        _           
+|  _ \\ _   _| | ___  ___ 
+| |_) | | | | |/ _ \\/ __|
+|  _ <| |_| | |  __/\\__ \\
+|_| \\_\\\\__,_|_|\\___||___/
+
+"""),
+  );
+
+  stdout.writeln(
+    Intl.message(
+      """Le jeu vous propose des lettres. Grâce à ces lettres, vous devrez former un des mots les plus longs possible. 
+Vous avez le droit d’utiliser plusieurs fois la même lettre, mais il est préférable de l’utiliser autant de fois que le jeu vous le propose. 
+Par défaut, le jeu vous proposera systématiquement 9 lettres avec au minimum 2 voyelles. 
+
+Le jeu utilise des dictionnaires de mots trouvés sur Internet. Il se peut donc qu’il y ait des abréviations, d’ancien mots ou des erreurs. 
+En français, le dictionnaire ne prend pas en compte les mots avec des accents.
+Vous pouvez retrouver les dictionnaires sur le site suivant : https://files.bassinecorp.fr/letters_game/
+
+Le jeu n’utilise aucune API et ne nécessite pas d’une connexion à Internet.
+
+
+""",
+      name: "how_to_play_description",
+    ),
+  );
+  stdout.writeln(
+    printCentered(
+      chalk.deepPink(Intl.message("Appuyez sur n'importe quelle touche pour continuer.", name: "press_any_key")),
+    ),
+  );
+  setCursorPosition(terminalHeight * 0.95, 0);
+  stdout.writeln(
+    printCentered(chalk.cyanBright(Intl.message("Développé avec <3 à Paris par Elie.", name: "developed_by"))),
+  );
+
+  final key = console.readKey();
+
+  if (key.controlChar == ControlCharacter.ctrlC) {
+    disableAlternateScreen();
+    exit(0);
+  } else {
+    await newGame();
+    return;
+  }
+}
+
+Future settings() async {
+  clearScreen();
+  int select = 0;
+  bool done = false;
+
+  final columnPosition1 = (Intl.defaultLocale == 'en' ? (terminalWidth - 23) / 2 : (terminalWidth - 28) / 2).round();
+  final columnPosition2 = (Intl.defaultLocale == 'en' ? (terminalWidth - 21) / 2 : (terminalWidth - 30) / 2).round();
+
+  void renderScreen() {
+    clearScreen();
+    setCursorPosition(terminalHeight * 0.1, 0);
+    stdout.writeln(printCentered(chalk.deepPink(Intl.defaultLocale == 'en' ? "Settings" : "Paramètres")));
+
+    setCursorPosition(terminalHeight * 0.3, columnPosition1);
+    stdout.writeln(Intl.message("Nombre de lettres minimum : ", name: "min_letters_count"));
+    setCursorPosition(terminalHeight * 0.3 + 1, columnPosition1);
+    if (select == 0) {
+      stdout.write(chalk.bgMagenta(" > $nbLetters < "));
+    } else {
+      stdout.write(chalk.greyX11(Intl.message("Actuellement : $nbLetters", name: "currently", args: [nbLetters])));
+    }
+
+    setCursorPosition(terminalHeight * 0.6, columnPosition2);
+    stdout.writeln(Intl.message("Nombre de voyelles minimum :", name: "min_vowels_count"));
+    setCursorPosition(terminalHeight * 0.6 + 1, columnPosition2);
+    if (select == 1) {
+      stdout.write(chalk.bgMagenta(" > $nbVowels < "));
+    } else {
+      stdout.write(chalk.greyX11(Intl.message("Actuellement : $nbVowels", name: "currently", args: [nbVowels])));
+    }
+
+    setCursorPosition(terminalHeight * 0.9, 0);
+    stdout.writeln(chalk.greyX11(Intl.message("Q pour quitter", name: "quit_settings")));
+  }
+
+  renderScreen();
+
+  while (!done) {
+    final key = console.readKey();
+
+    if (key.controlChar == ControlCharacter.arrowUp) {
+      select = (select - 1) < 0 ? 1 : select - 1;
+      renderScreen();
+    }
+    if (key.controlChar == ControlCharacter.arrowDown) {
+      select = (select + 1) > 1 ? 0 : select + 1;
+      renderScreen();
+    }
+    if (key.controlChar == ControlCharacter.ctrlC) {
+      disableAlternateScreen();
+      exit(0);
+    }
+    if (key.char.toLowerCase() == 'q') {
+      await newGame();
+      return;
+    }
+    if (key.controlChar == ControlCharacter.enter) {
+      setCursorPosition(
+        select == 0 ? (terminalHeight * 0.3 + 2) : (terminalHeight * 0.6 + 2),
+        select == 0 ? columnPosition1 : columnPosition2,
+      );
+      stdout.write(chalk.cyan(Intl.message("Entrez une valeur : ", name: "enter_value")));
+      String? line = stdin.readLineSync();
+      final input = int.tryParse(line ?? "");
+      if (select == 0) {
+        if (input != null && input >= 6 && input <= 20) {
+          nbLetters = input;
+        } else {
+          showError(
+            Intl.message("Le nombre de lettres doit être compris entre 6 et 20.", name: "invalid_min_letters_count"),
+            chalk.red,
+            0.42,
+          );
+          sleep(Duration(seconds: 2));
+        }
+      } else if (select == 1) {
+        if (input != null && input >= 2 && input <= nbLetters - 2) {
+          nbVowels = input;
+        } else {
+          showError(
+            Intl.message(
+              "Le nombre de voyelles doit être compris entre 2 et ${nbLetters - 2}.",
+              name: "invalid_min_vowels_count",
+            ),
+            chalk.red,
+            0.72,
+          );
+          sleep(Duration(seconds: 2));
+        }
+      }
+      renderScreen();
     }
   }
 }
 
 Future newGame() async {
+  wordsFound.clear();
+  inputWord = "";
+  showErrorMsg = false;
   clearScreen();
   final availableLetters = await chooseLetters();
   setCursorPosition(4, 0);
@@ -184,7 +381,7 @@ Future newGame() async {
   drawBox(row: 3, col: 100, startRow: terminalHeight * 0.5, color: chalk.white, centered: true);
   setCursorPosition((terminalHeight * 0.65), 0);
   stdout.writeln(printCentered(chalk.lightPink(availableLetters.join(' '))));
-  setCursorPosition(35, ((terminalWidth - 20) / 2) + 1);
+  selectMenu(-1);
   stdout.write('\x1b[?25h');
   inputWord = await readFilteredInput(availableLetters);
 }
@@ -192,20 +389,39 @@ Future newGame() async {
 Future<String> readFilteredInput(List<String> availableLetters) async {
   final buffer = StringBuffer();
   final allowed = availableLetters.map((l) => l.toUpperCase()).toSet();
+  int select = -1;
 
   renderLetters(availableLetters, buffer);
   while (true) {
     final key = console.readKey();
     if (key.char == '\n' || key.controlChar == ControlCharacter.enter) {
-      final inputWord = buffer.toString();
-      if (inputWord.isNotEmpty) {
-        await verifyWord(inputWord, availableLetters, buffer);
-        renderLetters(availableLetters, buffer);
+      if (select == -1) {
+        final inputWord = buffer.toString();
+        if (inputWord.isNotEmpty) {
+          await verifyWord(inputWord, availableLetters, buffer);
+          renderLetters(availableLetters, buffer);
+        }
+        continue;
       }
-      continue;
+      if (select == 0) {
+        howToPlay();
+        return '';
+      }
+      if (select == 1) {
+        selectLanguage();
+        return '';
+      }
+      if (select == 2) {
+        await settings();
+        return '';
+      }
+      if (select == 3) {
+        disableAlternateScreen();
+        exit(0);
+      }
     }
     final char = key.char.toUpperCase();
-    if (allowed.contains(char) && RegExp(r'[A-Z]').hasMatch(char)) {
+    if (select == -1 && allowed.contains(char) && RegExp(r'[A-Z]').hasMatch(char)) {
       buffer.write(char);
       stdout.write(char);
       renderLetters(availableLetters, buffer);
@@ -222,6 +438,27 @@ Future<String> readFilteredInput(List<String> availableLetters) async {
     if (key.controlChar == ControlCharacter.ctrlC) {
       disableAlternateScreen();
       exit(0);
+    }
+    if (key.controlChar == ControlCharacter.arrowUp) {
+      if (select == -1) {
+        setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2) + 1);
+        stdout.write('\x1b[2K\r');
+        buffer.clear();
+        setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2) + 1 + buffer.length);
+      }
+      select = (select - 1) < -1 ? 3 : (select - 1);
+
+      selectMenu(select);
+    }
+    if (key.controlChar == ControlCharacter.arrowDown) {
+      if (select == -1) {
+        setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2) + 1);
+        stdout.write('\x1b[2K\r');
+        buffer.clear();
+        setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2) + 1 + buffer.length);
+      }
+      select = (select + 1) > 3 ? -1 : (select + 1);
+      selectMenu(select);
     }
   }
 }
@@ -272,10 +509,9 @@ Future<void> verifyWord(String inputWord, List<String> availableLetters, StringB
     final wordMap = lettersToDico(inputWord.split(''));
     final wordsPossible = await findPossibleWord(availableLetters);
     if (isIncluded(wordMap, lettersMap) && wordsPossible.contains(inputWord.toUpperCase())) {
-      stdout.writeln(
-        chalk.hotPink(
-          Intl.message("Bravo ! Le mot '$inputWord' est un des plus longs.", name: "win_congrats", args: []),
-        ),
+      showError(
+        Intl.message("Bravo ! Le mot '$inputWord' est un des plus longs.", name: "win_congrats", args: []),
+        chalk.green,
       );
     } else if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord.toUpperCase())) {
       wordsFound.add(inputWord);
@@ -333,25 +569,20 @@ List<String> vowels = ['A', 'E', 'I', 'O', 'U'];
 List<String> word = [];
 List<Map<dynamic, dynamic>> dictionary = [];
 
-int nbVowels = 0;
-
-// TODO randomize letters
 Future<List<String>> chooseLetters() async {
   List<String> availableLetters = [];
-  int nbLetters = 7;
 
-  while (availableLetters.length < nbLetters) {
+  for (int i = 0; i < nbVowels; i++) {
+    String vowel = vowels[Random().nextInt(vowels.length)];
+    availableLetters.add(vowel);
+  }
+
+  for (int i = availableLetters.length; i < nbLetters; i++) {
     String letter = letters[Random().nextInt(letters.length)];
-    if (availableLetters.contains(letter)) continue;
     availableLetters.add(letter);
-    if (vowels.contains(letter)) {
-      nbVowels++;
-    }
   }
 
-  if (nbVowels < 2) {
-    availableLetters[Random().nextInt(availableLetters.length)] = vowels[Random().nextInt(vowels.length)];
-  }
+  availableLetters.shuffle();
 
   return availableLetters;
 }
