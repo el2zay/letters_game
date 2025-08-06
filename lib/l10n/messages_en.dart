@@ -25,7 +25,7 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static Map<String, dynamic> _notInlinedMessages(_) => {
         "words_found": MessageLookupByLibrary.simpleMessage("WORDS FOUND"),
-        "win_congrats": MessageLookupByLibrary.simpleMessage("Congratulations! The word is one of the longest."),
+        "win_congrats": (word) => "Congratulations! The word $word is one of the longest.",
         "invalid_word": MessageLookupByLibrary.simpleMessage("The word does not exist in the dictionary."),
         "available_letters": MessageLookupByLibrary.simpleMessage("Here are the available letters:"),
         "enter_word": MessageLookupByLibrary.simpleMessage("Enter a word:"),
@@ -51,6 +51,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "invalid_min_letters_count":
             MessageLookupByLibrary.simpleMessage("The number of letters must be between 6 and 20."),
         "invalid_min_vowels_count": MessageLookupByLibrary.simpleMessage(
-            "The number of vowels must be between 2 and the number of letters minus 2.")
+            "The number of vowels must be between 2 and the number of letters minus 2."),
+        "replay": MessageLookupByLibrary.simpleMessage("1. Replay"),
       };
 }

@@ -54,6 +54,25 @@ void screenSizeRequired() {
 
   terminalHeight = stdout.terminalLines;
   terminalWidth = stdout.terminalColumns;
+  console.clearScreen();
+
+  while (true) {
+    showError(
+      printCentered(Intl.message("Appuyez sur n'importe quelle touche pour continuer.", name: "press_any_key")),
+      chalk.cyanBright,
+      0.5,
+    );
+    console.hideCursor();
+    final key = console.readKey();
+    if (key.controlChar == ControlCharacter.ctrlC) {
+      disableAlternateScreen();
+      exit(0);
+    } else {
+      terminalHeight = stdout.terminalLines;
+      terminalWidth = stdout.terminalColumns;
+      break;
+    }
+  }
 }
 
 List<String> getFrenchFlagLines({int height = 18, int stripeWidth = 18}) {
@@ -178,40 +197,13 @@ void selectLanguage() async {
   }
 }
 
-void selectMenu(int select) {
+void selectMenu(int select, List<String> menuList) {
   setCursorPosition(terminalHeight * 0.75, 0);
 
-  stdout.writeln(
-    printCentered(
-      select == 0
-          ? chalk.bgMagenta(Intl.message("1. Comment jouer ?", name: "how_to_play"))
-          : Intl.message("1. Comment jouer ?", name: "how_to_play"),
-    ),
-  );
-  stdout.writeln();
-  stdout.writeln(
-    printCentered(
-      select == 1
-          ? chalk.bgMagenta(Intl.message("2. Menu principal ", name: "main_menu"))
-          : Intl.message("2. Menu principal ", name: "main_menu"),
-    ),
-  );
-  stdout.writeln();
-  stdout.writeln(
-    printCentered(
-      select == 2
-          ? chalk.bgMagenta(Intl.message("3. Paramètres     ", name: "settings"))
-          : Intl.message("3. Paramètres     ", name: "settings"),
-    ),
-  );
-  stdout.writeln();
-  stdout.writeln(
-    printCentered(
-      select == 3
-          ? chalk.bgMagenta(Intl.message("4. Quitter le jeu ", name: "quit"))
-          : Intl.message("4. Quitter le jeu ", name: "quit"),
-    ),
-  );
+  for (int i = 0; i < menuList.length; i++) {
+    stdout.writeln(printCentered(select == i ? chalk.bgMagenta(menuList[i]) : menuList[i]));
+    stdout.writeln();
+  }
 
   if (select == -1) {
     setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2));
@@ -374,6 +366,7 @@ Future newGame() async {
   showErrorMsg = false;
   clearScreen();
   final availableLetters = await chooseLetters();
+  print(await findPossibleWord(availableLetters));
   setCursorPosition(4, 0);
   stdout.writeln(printCentered(Intl.message("MOTS TROUVÉS", name: "words_found")));
   drawBox(row: terminalHeight * 0.35, col: 100, startRow: terminalHeight * 0.15, color: chalk.green, centered: true);
@@ -381,7 +374,13 @@ Future newGame() async {
   drawBox(row: 3, col: 100, startRow: terminalHeight * 0.5, color: chalk.white, centered: true);
   setCursorPosition((terminalHeight * 0.65), 0);
   stdout.writeln(printCentered(chalk.lightPink(availableLetters.join(' '))));
-  selectMenu(-1);
+  selectMenu(-1, [
+    Intl.message("1. Comment jouer ?", name: "how_to_play"),
+    Intl.message("2. Menu principal ", name: "main_menu"),
+    Intl.message("3. Paramètres     ", name: "settings"),
+    Intl.message("4. Quitter le jeu ", name: "quit"),
+  ]);
+
   stdout.write('\x1b[?25h');
   inputWord = await readFilteredInput(availableLetters);
 }
@@ -448,7 +447,12 @@ Future<String> readFilteredInput(List<String> availableLetters) async {
       }
       select = (select - 1) < -1 ? 3 : (select - 1);
 
-      selectMenu(select);
+      selectMenu(select, [
+        Intl.message("1. Comment jouer ?", name: "how_to_play"),
+        Intl.message("2. Menu principal ", name: "main_menu"),
+        Intl.message("3. Paramètres     ", name: "settings"),
+        Intl.message("4. Quitter le jeu ", name: "quit"),
+      ]);
     }
     if (key.controlChar == ControlCharacter.arrowDown) {
       if (select == -1) {
@@ -458,7 +462,12 @@ Future<String> readFilteredInput(List<String> availableLetters) async {
         setCursorPosition(terminalHeight * 0.53, ((terminalWidth - 20) / 2) + 1 + buffer.length);
       }
       select = (select + 1) > 3 ? -1 : (select + 1);
-      selectMenu(select);
+      selectMenu(select, [
+        Intl.message("1. Comment jouer ?", name: "how_to_play"),
+        Intl.message("2. Menu principal ", name: "main_menu"),
+        Intl.message("3. Paramètres     ", name: "settings"),
+        Intl.message("4. Quitter le jeu ", name: "quit"),
+      ]);
     }
   }
 }
@@ -495,6 +504,41 @@ void clearErrorMessage(StringBuffer buffer) {
   }
 }
 
+Future winCongratulation(String inputWord) async {
+  int select = 0;
+  clearScreen();
+  showError(
+    Intl.message("Bravo ! Le mot '$inputWord' est un des plus longs.", name: "win_congrats", args: [inputWord]),
+    chalk.green,
+    0.5,
+  );
+
+  while (true) {
+    selectMenu(select, [
+      Intl.message("1. Rejouer       ", name: "replay"),
+      Intl.defaultLocale == 'en' ? "2. Quit  " : "2. Quitter le jeu",
+    ]);
+    final key = console.readKey();
+    if (key.controlChar == ControlCharacter.ctrlC) {
+      disableAlternateScreen();
+      exit(0);
+    }
+    if (key.controlChar == ControlCharacter.arrowUp) {
+      select = (select - 1) < 0 ? 1 : select - 1;
+    } else if (key.controlChar == ControlCharacter.arrowDown) {
+      select = (select + 1) > 1 ? 0 : select + 1;
+    } else if (key.controlChar == ControlCharacter.enter) {
+      if (select == 0) {
+        await newGame();
+        return;
+      } else if (select == 1) {
+        disableAlternateScreen();
+        exit(0);
+      }
+    }
+  }
+}
+
 Future<void> verifyWord(String inputWord, List<String> availableLetters, StringBuffer buffer) async {
   if (wordsFound.contains(inputWord)) {
     showError(
@@ -509,10 +553,8 @@ Future<void> verifyWord(String inputWord, List<String> availableLetters, StringB
     final wordMap = lettersToDico(inputWord.split(''));
     final wordsPossible = await findPossibleWord(availableLetters);
     if (isIncluded(wordMap, lettersMap) && wordsPossible.contains(inputWord.toUpperCase())) {
-      showError(
-        Intl.message("Bravo ! Le mot '$inputWord' est un des plus longs.", name: "win_congrats", args: []),
-        chalk.green,
-      );
+      await winCongratulation(inputWord);
+      return;
     } else if (isIncluded(wordMap, lettersMap) && !wordsPossible.contains(inputWord.toUpperCase())) {
       wordsFound.add(inputWord);
       buffer.clear();
