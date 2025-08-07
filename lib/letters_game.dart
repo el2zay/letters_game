@@ -564,13 +564,13 @@ Future<void> verifyWord(String inputWord, List<String> availableLetters, StringB
   int col = currentCol;
   int row = currentRow;
   int currentLineWidth = 0;
-  // if (wordsFound.contains(inputWord)) {
-  //   showError(
-  //     Intl.message("Le mot '$inputWord' a déjà été trouvé.", name: "already_found", args: [inputWord]),
-  //     chalk.greenYellow,
-  //   );
-  //   return;
-  // }
+  if (wordsFound.contains(inputWord)) {
+    showError(
+      Intl.message("Le mot '$inputWord' a déjà été trouvé.", name: "already_found", args: [inputWord]),
+      chalk.greenYellow,
+    );
+    return;
+  }
   bool exist = await isValidWord(inputWord);
   if (exist) {
     final lettersMap = lettersToDico(availableLetters);
