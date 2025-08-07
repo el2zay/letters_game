@@ -1,8 +1,11 @@
 # Letters Game
-> Pour la version anglaise, consultez [README.md](README.md).
+>For the English version, see the file [here](README.md).
 
 Un jeu en terminal dans lequel vous devez former le mot le plus long possible à partir de lettres proposées.  
 Ce jeu est disponible en français et en anglais. La langue du jeu vous sera demandée à chaque lancement du jeu.
+
+https://github.com/user-attachments/assets/03cd88fd-af62-4949-94c7-c6dfe04d6a5c
+
 
 ## Règles
 Le jeu vous propose des lettres. Grâce à ces lettres, vous devrez former un des mots les plus longs possible.
