@@ -1,8 +1,11 @@
 # Letters Game  
-> Pour la version française, consultez le fichier [README_fr.md].
+> Pour la version française, consultez le fichier [ici](https://github.com/el2zay/letters_game/blob/main/README_fr.md).
 
 A terminal-based game in which you must build the longest possible word from a set of letters.  
 The game is available in both French and English; you choose the language each time you start it.
+
+https://github.com/user-attachments/assets/03cd88fd-af62-4949-94c7-c6dfe04d6a5c
+
 
 ## Rules
 The game presents you with several letters. With these letters you must create one of the longest words you can.
