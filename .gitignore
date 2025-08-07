@@ -4,7 +4,7 @@
 
 # Ignore .exe and without  extension
 *.exe
-*~
+*
 # — 
 *.DS_Store
 
