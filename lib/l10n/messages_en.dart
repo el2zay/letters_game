@@ -33,7 +33,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "not_longest": MessageLookupByLibrary.simpleMessage("The word is correct but not the longest possible."),
         "not_buildable": MessageLookupByLibrary.simpleMessage("The word cannot be formed with the available letters."),
         "terminal_size_error":
-            MessageLookupByLibrary.simpleMessage("The size of your terminal is too small. Min height: 33 | width: 156"),
+            MessageLookupByLibrary.simpleMessage("The size of your terminal is incorrect. Min height: 33 | width: 156    Max width: 185"),
         "how_to_play_description": MessageLookupByLibrary.simpleMessage(
             "The game gives you letters. Use these letters to form one of the longest words possible.\nYou can use a letter as many times as it is shown. \nBy default, the game will always suggest 9 letters with a minimum of 2 vowels. You can change this in the settings.\n\nThe game uses dictionaries of words found on the Internet. As a result, there may be abbreviations, old words or errors. \nIn French, the dictionary does not take into account words with accents.\nDictionaries can be found at https://files.bassinecorp.fr/letters_game/\n\nThe game uses no API and requires no Internet connection.\n\n"),
         "press_any_key": MessageLookupByLibrary.simpleMessage("Press any key to continue."),

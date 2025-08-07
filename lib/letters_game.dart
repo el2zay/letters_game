@@ -32,18 +32,17 @@ void main() async {
   });
   await initializeMessages('en');
   Intl.defaultLocale = 'en';
-  if (terminalHeight < 33 || terminalWidth < 156) screenSizeRequired();
+  if ((terminalHeight < 33 || terminalWidth < 156) || terminalWidth > 185) screenSizeRequired();
   selectLanguage();
 }
 
 void screenSizeRequired() {
-  // Le booléen permet de stopper la boucle quand la condition est remplie.
-  while (stdout.terminalLines < 33 || stdout.terminalColumns < 156) {
+  while ((stdout.terminalLines < 33 || stdout.terminalColumns < 156) || stdout.terminalColumns > 185) {
     console.hideCursor();
     showError(
       printCentered(
         Intl.message(
-          "La taille de votre terminal est trop petite. Min height: 33 | width: 156 ",
+          "La taille de votre terminal est incorrecte. Min height: 33 | width: 156    Max width: 185",
           name: "terminal_size_error",
         ),
       ),
@@ -366,7 +365,8 @@ Future newGame() async {
   showErrorMsg = false;
   clearScreen();
   final availableLetters = await chooseLetters();
-  // print(await findPossibleWord(availableLetters));
+  console.hideCursor();
+  clearScreen();
   setCursorPosition(4, 0);
   stdout.writeln(printCentered(Intl.message("MOTS TROUVÉS", name: "words_found")));
   drawBox(row: terminalHeight * 0.35, col: 100, startRow: terminalHeight * 0.15, color: chalk.green, centered: true);
@@ -558,14 +558,19 @@ Future winCongratulation(String inputWord) async {
   }
 }
 
+int currentRow = 7;
+int currentCol = (terminalWidth * 0.25).floor();
 Future<void> verifyWord(String inputWord, List<String> availableLetters, StringBuffer buffer) async {
-  if (wordsFound.contains(inputWord)) {
-    showError(
-      Intl.message("Le mot '$inputWord' a déjà été trouvé.", name: "already_found", args: [inputWord]),
-      chalk.greenYellow,
-    );
-    return;
-  }
+  int col = currentCol;
+  int row = currentRow;
+  int currentLineWidth = 0;
+  // if (wordsFound.contains(inputWord)) {
+  //   showError(
+  //     Intl.message("Le mot '$inputWord' a déjà été trouvé.", name: "already_found", args: [inputWord]),
+  //     chalk.greenYellow,
+  //   );
+  //   return;
+  // }
   bool exist = await isValidWord(inputWord);
   if (exist) {
     final lettersMap = lettersToDico(availableLetters);
@@ -584,8 +589,16 @@ Future<void> verifyWord(String inputWord, List<String> availableLetters, StringB
       setCursorPosition(7, ((terminalWidth - 20) / 2) + 1);
       stdout.write('\x1b[2K\r');
       for (int i = 0; i < wordsFound.length; i++) {
-        setCursorPosition(7 + i, ((terminalWidth - 20) / 2) + 1);
-        stdout.write(chalk.green(wordsFound[i]));
+        String word = wordsFound[i];
+        if (currentLineWidth + word.length * 5 > (terminalWidth * 0.55)) {
+          row += 2;
+          col = currentCol;
+          currentLineWidth = 0;
+        }
+        setCursorPosition(row, col);
+        stdout.write(chalk.green(word));
+        col += 5 + word.length;
+        currentLineWidth += 5 + word.length;
       }
     }
   } else {
