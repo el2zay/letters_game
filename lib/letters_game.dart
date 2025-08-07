@@ -32,7 +32,7 @@ void main() async {
   });
   await initializeMessages('en');
   Intl.defaultLocale = 'en';
-  screenSizeRequired();
+  if (terminalHeight < 33 || terminalWidth < 156) screenSizeRequired();
   selectLanguage();
 }
 
@@ -230,8 +230,8 @@ void howToPlay() async {
   stdout.writeln(
     Intl.message(
       """Le jeu vous propose des lettres. Grâce à ces lettres, vous devrez former un des mots les plus longs possible. 
-Vous avez le droit d’utiliser plusieurs fois la même lettre, mais il est préférable de l’utiliser autant de fois que le jeu vous le propose. 
-Par défaut, le jeu vous proposera systématiquement 9 lettres avec au minimum 2 voyelles. 
+Vous pouvez utiliser une lettre autant de fois qu'elle est proposée.
+Par défaut, le jeu vous proposera systématiquement 9 lettres avec au minimum 2 voyelles. Vous pouvez modifier cela dans les paramètres.
 
 Le jeu utilise des dictionnaires de mots trouvés sur Internet. Il se peut donc qu’il y ait des abréviations, d’ancien mots ou des erreurs. 
 En français, le dictionnaire ne prend pas en compte les mots avec des accents.
@@ -366,7 +366,7 @@ Future newGame() async {
   showErrorMsg = false;
   clearScreen();
   final availableLetters = await chooseLetters();
-  print(await findPossibleWord(availableLetters));
+  // print(await findPossibleWord(availableLetters));
   setCursorPosition(4, 0);
   stdout.writeln(printCentered(Intl.message("MOTS TROUVÉS", name: "words_found")));
   drawBox(row: terminalHeight * 0.35, col: 100, startRow: terminalHeight * 0.15, color: chalk.green, centered: true);
@@ -387,7 +387,6 @@ Future newGame() async {
 
 Future<String> readFilteredInput(List<String> availableLetters) async {
   final buffer = StringBuffer();
-  final allowed = availableLetters.map((l) => l.toUpperCase()).toSet();
   int select = -1;
 
   renderLetters(availableLetters, buffer);
@@ -420,11 +419,23 @@ Future<String> readFilteredInput(List<String> availableLetters) async {
       }
     }
     final char = key.char.toUpperCase();
-    if (select == -1 && allowed.contains(char) && RegExp(r'[A-Z]').hasMatch(char)) {
-      buffer.write(char);
-      stdout.write(char);
-      renderLetters(availableLetters, buffer);
-      clearErrorMessage(buffer);
+    if (select == -1 && RegExp(r'[A-Z]').hasMatch(char)) {
+      Map<String, int> used = {};
+      for (var l in buffer.toString().split('')) {
+        used[l] = (used[l] ?? 0) + 1;
+      }
+
+      Map<String, int> available = {};
+      for (var l in availableLetters) {
+        available[l] = (available[l] ?? 0) + 1;
+      }
+
+      if ((used[char] ?? 0) < (available[char] ?? 0)) {
+        buffer.write(char);
+        stdout.write(char);
+        renderLetters(availableLetters, buffer);
+        clearErrorMessage(buffer);
+      }
     }
     if (key.controlChar == ControlCharacter.backspace && buffer.isNotEmpty) {
       final text = buffer.toString();
@@ -477,11 +488,19 @@ void renderLetters(List<String> availableLetters, StringBuffer buffer) {
   setCursorPosition((terminalHeight * 0.65), 0);
   stdout.write('\x1b[2K\r');
   String line = '';
-  for (int i = 0; i < availableLetters.length; i++) {
-    if (buffer.toString().contains(availableLetters[i])) {
-      line += chalk.grey('${availableLetters[i]} ');
+
+  Map<String, int> used = {};
+  for (var l in buffer.toString().split('')) {
+    used[l] = (used[l] ?? 0) + 1;
+  }
+
+  Map<String, int> displayCount = {};
+  for (var letter in availableLetters) {
+    displayCount[letter] = (displayCount[letter] ?? 0) + 1;
+    if ((used[letter] ?? 0) >= displayCount[letter]!) {
+      line += chalk.grey('$letter ');
     } else {
-      line += chalk.lightPink('${availableLetters[i]} ');
+      line += chalk.lightPink('$letter ');
     }
   }
   stdout.writeln(printCentered(line));
