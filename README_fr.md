@@ -7,7 +7,7 @@ Ce jeu est disponible en français et en anglais. La langue du jeu vous sera dem
 ## Règles
 Le jeu vous propose des lettres. Grâce à ces lettres, vous devrez former un des mots les plus longs possible.
 
-Vous avez le droit d'utiliser plusieurs fois la même lettre, mais il est préférable de l'utiliser autant de fois que le jeu vous le propose.  
+Vous pouvez utiliser une lettre autant de fois qu'elle est proposée.
 Par défaut, le jeu vous proposera systématiquement **9 lettres** avec **au minimum 2 voyelles**.
 
 > Vous pouvez modifier le nombre de lettres et de voyelles minimums dans les paramètres du jeu.
@@ -28,6 +28,27 @@ chmod +x <nom_du_fichier>
 Le jeu ne stocke **aucune donnée**.  
 Pour désinstaller le jeu, il vous suffit de supprimer l'exécutable.
 
+<b>Vous pouvez aussi compiler le jeu vous-même</b> (fonctionne sur Linux, macOS et Windows) :
+1. Installez [Dart SDK](https://dart.dev/get-dart).
+2. Clonez le dépôt :
+    ```bash
+    git clone https://github.com/el2zay/letters_game
+    ```
+3. Accédez au dossier du projet :
+    ```bash
+    cd letters_game
+    ```
+4. Téléchargez les dictionnaires [ici](https://files.bassinecorp.fr/letters_game/) et placez les dans `lib/resources`.
+
+5. Compilez le projet :
+    ```bash
+    dart compile exe lib/letters_game.dart -o letters_game
+    ```
+6. Exécutez le jeu :
+    ```bash
+    ./letters_game
+    ```
+
 ## Terminal supporté 
 ### 🍏 macOS
 - Terminal ❌
@@ -35,3 +56,9 @@ Pour désinstaller le jeu, il vous suffit de supprimer l'exécutable.
 - iTerm2 ✅
 - Ghostty ✅
 - Warp ✅
+
+### 🐧 Linux (testé sur ZorinOS)
+- GNOME Terminal ✅
+- Hyper ✅ 
+- Terminator ✅
+- Alacritty ✅

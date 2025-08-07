@@ -7,7 +7,7 @@ The game is available in both French and English; you choose the language each t
 ## Rules
 The game presents you with several letters. With these letters you must create one of the longest words you can.
 
-You may reuse the same letter more than once, but ideally no more times than it appears in the set.  
+You can use a letter as many times as it is shown.
 By default the game supplies **9 letters** containing **at least 2 vowels**.
 
 > You can adjust the total number of letters and the minimum vowel count in the game settings.
@@ -28,6 +28,26 @@ chmod +x <executable_name>
 The game stores **no data**.  
 To uninstall it, just delete the executable.
 
+<b>You can also compile the game yourself</b> (works on Linux, macOS, and Windows):
+1. Install the [Dart SDK](https://dart.dev/get-dart).
+2. Clone the repository:
+    ```bash
+    git clone https://github.com/el2zay/letters_game
+    ```
+3. Navigate to the project folder:
+    ```bash
+    cd letters_game
+    ```
+4. Download the dictionaries [here](https://files.bassinecorp.fr/letters_game/) and place them in `lib/resources`.
+5. Compile the project:
+    ```bash
+    dart compile exe lib/letters_game.dart -o letters_game
+    ```
+6. Run the game:
+    ```bash
+    ./letters_game
+    ```
+
 ## Supported terminal
 ### 🍏 macOS
 - Terminal ❌
@@ -35,3 +55,9 @@ To uninstall it, just delete the executable.
 - iTerm2 ✅
 - Ghostty ✅
 - Warp ✅
+
+### 🐧 Linux (tested on ZorinOS)
+- GNOME Terminal ✅
+- Hyper ✅
+- Terminator ✅
+- Alacritty ✅
