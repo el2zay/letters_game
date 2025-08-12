@@ -41,13 +41,13 @@ Pour désinstaller le jeu, il vous suffit de supprimer l'exécutable.
     ```bash
     cd letters_game
     ```
-4. Téléchargez les dictionnaires [ici](https://files.bassinecorp.fr/letters_game/) et placez les dans `lib/resources`.
+<!-- 4. Téléchargez les dictionnaires [ici](https://files.bassinecorp.fr/letters_game/) et placez les dans `lib/resources`. -->
 
-5. Compilez le projet :
+4. Compilez le projet :
     ```bash
     dart compile exe lib/letters_game.dart -o letters_game
     ```
-6. Exécutez le jeu :
+5. Exécutez le jeu :
     ```bash
     ./letters_game
     ```

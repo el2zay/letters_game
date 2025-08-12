@@ -41,12 +41,12 @@ To uninstall it, just delete the executable.
     ```bash
     cd letters_game
     ```
-4. Download the dictionaries [here](https://files.bassinecorp.fr/letters_game/) and place them in `lib/resources`.
-5. Compile the project:
+<!-- 4. Download the dictionaries [here](https://files.bassinecorp.fr/letters_game/) and place them in `lib/resources`. -->
+4. Compile the project:
     ```bash
     dart compile exe lib/letters_game.dart -o letters_game
     ```
-6. Run the game:
+5. Run the game:
     ```bash
     ./letters_game
     ```
